@@ -10,6 +10,13 @@ type readRQ           = {tag          : string        ;
                          length       : int           ;
                          default      : string option } [@@deriving yojson]
 
+type writeRQ          = {tag          : string        ;
+                         time         : Nativeint.t   ;
+                         origin       : Coordinates.t ;
+                         length       : int           ;
+                         width        : int           ;
+                         values       : Value.t list  } [@@deriving yojson]
+
 type readPromise      =  {date        : float         ;
                           hash        : string        } [@@deriving yojson]
 
@@ -34,6 +41,14 @@ let readrq tag time origin width length default =
    length        = length  ;
    default       = default }
 
+let writerq tag time origin width length values =
+  {tag           = tag     ;
+   time          = time    ;
+   origin        = origin  ;
+   width         = width   ;
+   length        = length  ;
+   values        =  values }
+
 let filterTable table predicate =
   let filter c v acc =
     if  predicate c v
@@ -53,24 +68,27 @@ let filterCountFormulas values =
 let inRange inf sup c v =
   Coordinates.(lteq inf c && lteq c sup)
 
-let dependencies f values =
+let dependencies f formulas =
   let open Value                                 in
   let open Coordinates                           in
   match f with
-    {ty=TyCount; data=Some([r1;c1;r2;c2;_])} ->
-    let inf,sup = coords r1 c1, coords r2 (c2+1) in
-    filterTable values (inRange inf sup)
+    {ty=TyCount; data=Some([r1;c1;width;length;_])} ->
+    let inf,sup = coords r1 c1, coords (r1+width-1) (c1+length-1) in
+    let range c = lteq inf c && lteq c sup in
+    return (List.filter range formulas)
   | _ ->  None
 
-let findSchedule values coord =
+let findSchedule values formulas coord =
   let rec aux output vertex =
     let (color,formula) = HTC.find values vertex     in
-    match color,dependencies formula values with
-      Black,_          -> None
+    match color,dependencies formula formulas with
+      Black,_          -> output
     | Grey,_           ->
       HTC.replace values vertex (White,Value.nullInt);
       None
-    | White,None       -> output
+    | White,None       ->
+      HTC.replace values vertex (Black,formula);
+      return ([vertex])
     | White,Some(deps) ->
       HTC.replace values vertex (Grey,formula)       ;
       List.fold_left aux output deps                 >>= fun output -> 
@@ -88,8 +106,8 @@ let eval c values =
   let f = HTC.find values c                        in
   match f with
     Grey,_ -> None
-  | _,{ ty=TyCount ; data=Some ([r1;c1;r2;c2;i]) } ->
-    let inf,sup = (coords r1 c1),(coords r2 c2)    in
+  | _,{ ty=TyCount ; data=Some ([r1;c1;width;length;i]) } ->
+    let inf,sup = (coords r1 c1),(coords (r1+width-1) (c1+length-1))    in
     let inRange = inRange inf sup                  in
     let predicate c v = match v with
         _,{ ty=TyInt ; data = Some [i'] }          ->
@@ -107,7 +125,8 @@ let valuesTable vl vt =
 let evalSchedule vt s  =
   let s = List.rev s in 
   List.iter
-    (fun x -> match eval x vt with
+    (fun x ->
+       match eval x vt with
          Some v -> HTC.replace vt x (White,v)
        | None   -> ()) s
 
@@ -131,7 +150,6 @@ let httpConnection url writeFunction httpHeader =
 
 let postConnection url writeFunction httpHeader httpBody =
   let open Curl in
-  let url = Printf.sprintf "%s/read/%s" url sheet                   in
   let connection = httpConnection url writeFunction httpHeader      in
   set_post connection true;
   set_postfields connection httpBody;
@@ -150,10 +168,9 @@ let getConnection url writeFunction httpHeader getParams =
 let performConnection connection =
   let open Curl in
   perform connection;
-  get_responsecode connection 
-
-
-let getSize () = 10,10
+  get_responsecode connection
+      
+let getSize () = 4,11
 
 
 let getTime () =
@@ -178,33 +195,25 @@ let getHash hash buffSize =
   let _              = performConnection connection                  in
   Curl.cleanup connection;
   let bufferContents = Buffer.contents buffer                        in
-     print_endline bufferContents; flush_all ();
   let yojson         = Yojson.Safe.from_string bufferContents        in
   match locatedValueList_of_yojson yojson with
     Result.Ok(vl) -> vl
   | _ -> assert false
 
-let escapeQuotes s =
-  let open Str in
-  let re = regexp "\"" in
-  global_replace re "\\\\\"" s
-
-let getSheet time width length =
-  let buffer = Buffer.create 128                                    in
+let readSheet time width length =
+  let buffer = Buffer.create 512                                    in
   let write data =
     Buffer.add_string buffer data;
     String.length data                                              in
   let rrq            = readrq tag time
       (Coordinates.coords 0 0) width length (return default)        in
   let httpBody       =
-    "\"" ^
-    escapeQuotes (readRQ_to_yojson rrq |> Yojson.Safe.to_string)
-   ^ "\""                                                           in
+    readRQ_to_yojson rrq |> Yojson.Safe.to_string                   in
+  let url = Printf.sprintf "%s/read/%s" url sheet                   in
   let connection     = postConnection url write httpHeader httpBody in
-  let code = performConnection connection                           in
+  let _ = performConnection connection                           in
   Curl.cleanup connection;
   let bufferContents = Buffer.contents buffer                       in
-  print_endline httpBody; flush_all ();
   let yojson         = Yojson.Safe.from_string bufferContents       in
   let rp             = match readPromise_of_yojson yojson with
       Result.Ok(rp) -> rp
@@ -213,30 +222,59 @@ let getSheet time width length =
    then
      Unix.sleepf (rp.date -. (Unix.gettimeofday ()) +. 0.5)
    else ());
-  getHash rp.hash 1024 
+  getHash rp.hash 2048
 
-let values =
+let writeSheet time width length values =
+  let buffer = Buffer.create 2                                       in
+  let write data =
+    Buffer.add_string buffer data;
+    String.length data                                               in
+  let wrq            = writerq tag time
+      (Coordinates.coords 0 0) width length values                   in
+  let httpBody       =
+    writeRQ_to_yojson wrq |> Yojson.Safe.to_string                   in
+  let url = Printf.sprintf "%s/write/%s" url sheet                   in
+  let connection     = postConnection url write httpHeader httpBody  in
+  let _ = performConnection connection                               in
+  Curl.cleanup connection
+
+let values  () =
   let width,length = getSize () in
   let time         = getTime () in
-  return (getSheet time width length)
-  (* let open Value      in *)
-  (* let open Coordinates in *)
-  (* return [(coords 1 0, count 1 1 1 4 5); *)
-  (*             (coords 1 1, int 5) ;(coords 1 3, int 5); *)
-  (*             (coords 1 4, int 5) ; (coords 1 2, count 1 0 2 6 7)] *)
+  return (readSheet time width length)
+
+let writeValues values =
+  let width,length = getSize () in
+  let time         = getTime () in
+  writeSheet time width length values
+
+
+let compareLocVal (c1,_) (c2,_) =
+  Coordinates.compare c1 c2
+  
 
             
 let main () =
+  let open Value in
+  let l = [int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; count 1 0 3 11 1;
+           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; count 2 0 1 11 2;
+           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; count 3 0 1 11 3;
+           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; count 3 0 1 10 4] in
+  writeValues l;
   let valSchedOpt =
-    values                                                    >>= fun vals ->
+    values ()                                                 >>= fun vals ->
     return (valuesTable vals (HTC.create (List.length vals))) >>= fun vt   ->
     filterCountFormulas vt                                    >>= fun f    ->
-    return ( vt, List.map (findSchedule vt) f)                                   in
+    return ( vt, List.map (findSchedule vt f) f)                                   in
   (match valSchedOpt with
      Some (vt,s) ->
      List.iter (function None   -> ()| Some l -> (evalSchedule vt) l) s;
-     HTC.iter (fun c (col,v) -> print_endline (
-       Value.string_of_value v ^ " @ " ^ Coordinates.to_string c)) vt
+     let values = HTC.fold (fun c (col,v) acc -> (c,v)::acc) vt [] in
+     let values = List.sort compareLocVal values  in
+     List.iter (fun (c,v) -> print_endline (
+         Value.string_of_value v ^ " @ " ^ Coordinates.to_string c);flush_all ()) values;
+     let values = snd (List.split values) in
+     writeValues values
    | None -> ())
 
 let () = main ()
