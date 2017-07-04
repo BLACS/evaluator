@@ -1,4 +1,16 @@
 module HTC = Hashtbl.Make(Coordinates)
+
+let args = Sys.argv
+
+let url        = Array.get args 1
+
+let sheet      = Array.get args 2
+
+let tag        = Array.get args 3
+
+let default    = Array.get args 4
+
+let httpHeader = ["accept: application/json"; "content-type: application/json"]
     
 type color = Black | Grey | White
 
@@ -84,11 +96,12 @@ let findSchedule values formulas coord =
     match color,dependencies formula formulas with
       Black,_          -> output
     | Grey,_           ->
-      HTC.replace values vertex (White,Value.nullInt);
+      HTC.replace values vertex (Grey,formula);
       None
     | White,None       ->
+      output                                         >>= fun output ->
       HTC.replace values vertex (Black,formula);
-      return ([vertex])
+      return (vertex::output)
     | White,Some(deps) ->
       HTC.replace values vertex (Grey,formula)       ;
       List.fold_left aux output deps                 >>= fun output -> 
@@ -105,7 +118,8 @@ let eval c values =
   let open Coordinates                             in
   let f = HTC.find values c                        in
   match f with
-    Grey,_ -> None
+    Grey,_ ->
+    None
   | _,{ ty=TyCount ; data=Some ([r1;c1;width;length;i]) } ->
     let inf,sup = (coords r1 c1),(coords (r1+width-1) (c1+length-1))    in
     let inRange = inRange inf sup                  in
@@ -130,15 +144,6 @@ let evalSchedule vt s  =
          Some v -> HTC.replace vt x (White,v)
        | None   -> ()) s
 
-let url        = "http://localhost:8080" 
-
-let sheet      = "test"
-
-let tag        = "alice"
-
-let default    = "bob"
-
-let httpHeader = ["accept: application/json"; "content-type: application/json"]
 
 let httpConnection url writeFunction httpHeader =
   let open Curl in
@@ -170,7 +175,7 @@ let performConnection connection =
   perform connection;
   get_responsecode connection
       
-let getSize () = 4,11
+let getSize () = 20,11
 
 
 let getTime () =
@@ -259,7 +264,24 @@ let main () =
   let l = [int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; count 1 0 3 11 1;
            int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; count 2 0 1 11 2;
            int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; count 3 0 1 11 3;
-           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; count 3 0 1 10 4] in
+           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; count 3 0 1 10 4;
+           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
+           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
+           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
+           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
+           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
+           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
+           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
+           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
+           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
+           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
+           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
+           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
+           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
+           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
+           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
+           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
+           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ] in
   writeValues l;
   let valSchedOpt =
     values ()                                                 >>= fun vals ->
@@ -269,6 +291,7 @@ let main () =
   (match valSchedOpt with
      Some (vt,s) ->
      List.iter (function None   -> ()| Some l -> (evalSchedule vt) l) s;
+     HTC.iter (fun c (col,v) -> match col with Grey -> HTC.replace vt c (Grey,nullInt) | _ -> ()) vt;
      let values = HTC.fold (fun c (col,v) acc -> (c,v)::acc) vt [] in
      let values = List.sort compareLocVal values  in
      List.iter (fun (c,v) -> print_endline (
