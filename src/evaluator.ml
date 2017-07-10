@@ -174,8 +174,8 @@ let performConnection connection =
   let open Curl in
   perform connection;
   get_responsecode connection
-      
-let getSize () = 20,11
+    
+let getSize () = 4,11
 
 
 let getTime () =
@@ -265,26 +265,27 @@ let main () =
            int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; count 2 0 1 11 2;
            int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; count 3 0 1 11 3;
            int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; count 3 0 1 10 4;
-           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
-           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
-           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
-           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
-           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
-           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
-           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
-           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
-           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
-           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
-           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
-           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
-           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
-           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
-           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
-           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ;
-           int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ] in
+           (* int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ; *)
+           (* int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ; *)
+           (* int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ; *)
+           (* int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ; *)
+           (* int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ; *)
+           (* int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ; *)
+           (* int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ; *)
+           (* int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ; *)
+           (* int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ; *)
+           (* int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ; *)
+           (* int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ; *)
+           (* int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ; *)
+           (* int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ; *)
+           (* int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ; *)
+           (* int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ; *)
+           (* int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11          ; *)
+           (* int 1; int 2;int 3; int 4; int 5;int 6; int 7;int 8; int 9;int 10; int 11 *)          ] in
   writeValues l;
+  let vals = values () in
   let valSchedOpt =
-    values ()                                                 >>= fun vals ->
+    vals                                                      >>= fun vals ->
     return (valuesTable vals (HTC.create (List.length vals))) >>= fun vt   ->
     filterCountFormulas vt                                    >>= fun f    ->
     return ( vt, List.map (findSchedule vt f) f)                                   in
@@ -294,8 +295,8 @@ let main () =
      HTC.iter (fun c (col,v) -> match col with Grey -> HTC.replace vt c (Grey,nullInt) | _ -> ()) vt;
      let values = HTC.fold (fun c (col,v) acc -> (c,v)::acc) vt [] in
      let values = List.sort compareLocVal values  in
-     List.iter (fun (c,v) -> print_endline (
-         Value.string_of_value v ^ " @ " ^ Coordinates.to_string c);flush_all ()) values;
+     (* List.iter (fun (c,v) -> print_endline ( *)
+     (*     Value.string_of_value v ^ " @ " ^ Coordinates.to_string c);flush_all ()) values; *)
      let values = snd (List.split values) in
      writeValues values
    | None -> ())
