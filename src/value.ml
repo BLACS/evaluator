@@ -1,34 +1,62 @@
-type tylabel =
+(**  *)
+type ty =
     TyInt
   | TyNone
-  | TyCount 
-    
-let tylabel_to_yojson =
+  | TyCount
+
+let ty_to_yojson =
   let f s = `String s in
   function
     TyInt   -> f "int"
   | TyCount -> f "count"
   | TyNone  -> f "none"
-                 
-let tylabel_of_yojson =
+
+let ty_of_yojson =
   function
-    `String "int"   -> Result.Ok(TyInt)
-  | `String "count" -> Result.Ok(TyCount)
-  | `String "none"  -> Result.Ok(TyNone)
-  | _ -> Result.Error("tylabel")
+    `String "int"   -> Result.Ok TyInt
+  | `String "count" -> Result.Ok TyCount
+  | `String "none"  -> Result.Ok TyNone
+  | _ -> Result.Error "ty"
 
-type promise = {date:float; domain:int list; value: int option} [@@deriving yojson]
-           
-type t = {ty:tylabel; data:(int list) option; promises: (promise list) option} [@@deriving yojson]
+type date = float
+[@@deriving yojson]
 
-let int i =  {ty = TyInt; data = Some [i]; promises = None}
+type promise = {
+  date   : date;
+  domain : int list;
+  value  : int option
+} [@@deriving yojson]
 
-let nullInt =  {ty = TyInt; data = None; promises = None}
+type t = {
+  ty       : ty;
+  data     : (int list) option;
+  promises : (promise list) option
+} [@@deriving yojson]
 
-let count r1 c1 r2 c2 v = {ty = TyCount; data=Some [r1;c1;r2;c2;v];promises=None}
-                          
-let none = {ty= TyNone; data=None; promises=None}
-           
+let int i = {
+  ty       = TyInt;
+  data     = Some [i];
+  promises = None
+}
+
+let null_int =  {
+  ty       = TyInt;
+  data     = None;
+  promises = None
+}
+
+let count r1 c1 w h v = {
+  ty       = TyCount;
+  data     = Some [r1; c1; w; h; v];
+  promises = None
+}
+
+let none = {
+  ty       = TyNone;
+  data     = None;
+  promises = None
+}
+
 let string_of_value = function
     {ty = TyInt   ; data = Some [i]} -> "val "^ (string_of_int i)
   | {ty = TyInt   ; data = None    } -> "null"
@@ -39,9 +67,11 @@ let string_of_value = function
   | {ty = TyNone  ; data =_}  -> "⊥"
   | _ -> assert false
 
-let json_string_of_value = fun
-  v -> to_yojson v |> Yojson.Safe.to_string 
-                        
+let json_string_of_value =
+  to_yojson |> Yojson.Safe.to_string
+
 let succ = function
-    {ty = TyInt ; data = Some [i]; promises:_} -> int (Pervasives.succ i)
-  | _ -> assert false
+  | { ty = TyInt ; data = Some [i]; promises : _ } ->
+    int (Pervasives.succ i)
+  | _ ->
+    assert false
