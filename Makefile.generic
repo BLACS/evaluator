@@ -9,7 +9,7 @@ STARGET	 = $(OTARGET)
 ## Tools configuration ##
 #########################
 
-OCAMLBUILDFLAGS_COMMON = -cflag "-annot" -cflag "-bin-annot"
+OCAMLBUILDFLAGS_COMMON = -I liboblacs -cflag "-annot" -cflag "-bin-annot"
 
 # In Emacs, use classic display to enable error jumping.
 TERM = $(shell echo $$TERM)

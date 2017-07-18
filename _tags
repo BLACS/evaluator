@@ -1,2 +1,3 @@
+<liboblacs/**/*>: include
 <src>: include
-<src/*>: package(ppx_deriving_yojson), package(curl), package(str)
+true: package(ppx_deriving_yojson), package(curl), package(unix), package(str)
