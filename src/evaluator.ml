@@ -2,10 +2,6 @@ open Blacs
 
 type color = Black | White
 
-let bind x f = match x with
-    Some v -> f v
-  | None   -> None
-
 let marks = Hashtbl.create 13
 
 let rec eval_formula formulas located_cell =
@@ -38,13 +34,12 @@ and count i l =
   let open Value       in
   let open LocatedCell in
   let x = ref 0 in
-  let rec aux l = match l with
-      {cell = {value = Some {ty = TyInt; data= Some[i']}}}::tl ->
-      if i = i' then incr x
-      else (); aux tl
-    | _::tl -> aux tl
-    | [] -> ()
-  in aux l;
+  let aux = function
+      {cell = {value = Some {ty = TyInt; data= Some[i']}}} ->
+      if i = i' then incr x;
+    | _ -> ()
+  in
+  List.iter aux l;
   !x
            
 and eval_formula_definition f =
