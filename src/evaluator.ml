@@ -4,11 +4,11 @@ type color = Black | White
 
 let marks = Hashtbl.create 13
 
-let rec eval_formula formulas located_cell =
+let rec eval_formula formulas lcell =
   let open LocatedCell in
   let open Cell        in
-  let def    = located_cell.cell.definition in
-  let coords = located_cell.coords          in
+  let def    = lcell.cell.definition in
+  let coords = lcell.coords          in
   if is_evaluated coords then
     ()
   else if is_being_evaluated coords then
