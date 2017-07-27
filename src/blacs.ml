@@ -2,27 +2,33 @@ open Yojson.Safe
 
 let args    = Sys.argv
 
+module BHost =
+struct
+  let host = Array.get args 1
+  (* let host = "http://localhost:8080" *)
+end
+
+(* let sheet = "noname" *)
+
+(* let tag   = "alice" *)
+
+(* let default = "bob" *)
+  
 let sheet   = Array.get args 2
 
 let tag     = Array.get args 3
 
 let default = Array.get args 4
 
-module BHost =
-struct
-  let host = Array.get Sys.argv 1
-end
-
 module BPervasives = BlacsPervasives.Make(BHost)
 
 let get_size () =
-  let open Dimension in
+  let open Dimensions in
   match BPervasives.io_size sheet with
     Result.Ok { length=l ; width=w }  -> l,w
   | Result.Error e -> failwith e
 
 let get_time () =
-  let open Dimension in
   match BPervasives.clock_time sheet with
     Result.Ok  t -> t
   | Result.Error e -> failwith e
