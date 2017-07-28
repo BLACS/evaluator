@@ -70,16 +70,16 @@ let read time origin length width =
       ~width:width ~filter_formulas:false ~default:(Some default) in
   read_and_hash rrq
 
-let write_sheet time length width values =
+let write_sheet time length width cells =
   let wrq = WriteRequest.write_request ~tag:tag
       ~time:time ~origin:(Coordinates.coords 0 0)
-      ~length:length ~width:width ~values:values  in
+      ~length:length ~width:width ~cells:cells  in
   BPervasives.io_write sheet wrq
 
-let write time origin length width values =
+let write time origin length width cells =
   let wrq = WriteRequest.write_request ~tag:tag
       ~time:time ~origin:origin
-      ~length:length ~width:width ~values:values in
+      ~length:length ~width:width ~cells:cells in
   BPervasives.io_write sheet wrq
 
   
