@@ -40,7 +40,7 @@ and count i l =
   let open LocatedCell in
   let x = ref 0 in
   let aux = function
-      {cell = {value = Some {ty = TyInt; data= Some[i']}}} ->
+      {cell = {value = Some {ty = TyInt; data= Some i'}}} ->
       if i = i' then incr x;
     | _ -> ()
   in
